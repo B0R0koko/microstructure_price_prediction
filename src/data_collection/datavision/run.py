@@ -1,3 +1,6 @@
+import sys
+sys.path.append(r'C:\Users\310\Desktop\Progects_Py\microstructure_price_prediction\src')
+
 from pathlib import Path
 
 from scrapy.crawler import CrawlerProcess
@@ -9,13 +12,13 @@ from data_collection.datavision.settings import SETTINGS
 
 
 def main():
-    data_dir: Path = Path("D:/data/zipped_data")
+    data_dir: Path = Path(r"C:\Users\310\Desktop\Progects_Py\data\microstructure_price_prediction_data\zipped")
 
     process: CrawlerProcess = CrawlerProcess(settings=SETTINGS)
 
     process.crawl(
         TradesCrawler,
-        currency_pairs=[CurrencyPair(base="BTC", term="USDT")],
+        currency_pairs=[CurrencyPair(base="DOGE", term="USDT")],
         collect_mode=CollectMode.MONTHLY,
         output_dir=data_dir
     )

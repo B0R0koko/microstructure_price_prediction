@@ -1,3 +1,6 @@
+import sys
+sys.path.append(r'C:\Users\310\Desktop\Progects_Py\microstructure_price_prediction\src')
+
 import os
 import zipfile
 from pathlib import Path
@@ -130,9 +133,9 @@ class ParquetTransformer:
 
 if __name__ == "__main__":
     transformer: ParquetTransformer = ParquetTransformer(
-        zipped_data_dir=Path("D:/data/zipped_data"),
-        temp_dir=Path("D:/data/temp"),
-        output_dir=Path("D:/data/transformed_data"),
+        zipped_data_dir=Path(r"C:\Users\310\Desktop\Progects_Py\data\microstructure_price_prediction_data\zipped"),
+        temp_dir=Path(r"C:\Users\310\Desktop\Progects_Py\data\microstructure_price_prediction_data\temp"),
+        output_dir=Path(r"C:\Users\310\Desktop\Progects_Py\data\microstructure_price_prediction_data\unzipped"),
     )
 
     transformer.preprocess_zip_folders()

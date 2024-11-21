@@ -1,3 +1,6 @@
+import sys
+sys.path.append(r'C:\Users\310\Desktop\Progects_Py\microstructure_price_prediction\src')
+
 from datetime import datetime
 from pathlib import Path
 
@@ -27,16 +30,26 @@ class MicrostructurePipeline(FeaturePipeline):
         # Compute features using pl.LazyFrame, make sure to call .collect() on pl.LazyFrame at the very end
         # this way it is more efficient
         df_currency_pair = df_currency_pair.with_columns(
-            (pl.col("price") * pl.col("quantity")).alias("quote")
+            (pl.col("price") * pl.col("quantity")).alias("quote"),
+            (pl.when(pl.col("is_buyer_maker") == True).then(pl.col("price")).otherwise(None).fill_null(strategy="forward")).alias("last_ask"),
+            (pl.when(pl.col("is_buyer_maker") == False).then(pl.col('price')).otherwise(None).fill_null(strategy='forward')).alias("last_bid"),
+        )
+
+        
+        df_currency_pair = df_currency_pair.with_columns(
+            ((pl.col("last_bid") + pl.col("last_ask")) / 2).alias("target")
         )
         # Implement feature computation
         return df_currency_pair.collect()
 
+# As a possible target: "target" - average between last bid and ask 
+
+# Perfectly we would like to predict when market orders are pushing eather bid or ask. 
 
 def _test_main():
-    hive_dir: Path = Path("D:/data/transformed_data")
-    start_date: datetime = datetime(2024, 9, 1)
-    end_date: datetime = datetime(2024, 10, 1)
+    hive_dir: Path = Path(r"C:\Users\310\Desktop\Progects_Py\data\microstructure_price_prediction_data\unzipped")
+    start_date: datetime = datetime(2024, 6, 1)
+    end_date: datetime = datetime(2024, 7, 31)
 
     pipeline: MicrostructurePipeline = MicrostructurePipeline(hive_dir=hive_dir)
     df_cross_section: pl.DataFrame = pipeline.load_cross_section(start_time=start_date, end_time=end_date)
