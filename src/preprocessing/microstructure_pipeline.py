@@ -37,24 +37,57 @@ class MicrostructurePipeline(FeaturePipeline):
 
         
         df_currency_pair = df_currency_pair.with_columns(
-            ((pl.col("last_bid") + pl.col("last_ask")) / 2).alias("target")
+            ((pl.col("last_bid") + pl.col("last_ask")) / 2).alias("target"),
+            (pl.col('last_bid') - pl.col('last_ask')).alias('spread'),
+            # cum_sum() is pretty slow unfortunately 
+            (pl.col("quote").cum_sum().over("trade_time")).alias("cum_quote")
         )
-        # Implement feature computation
+        
+        # From this point I am going to drop all the rows that happen within one milisecond exept the last one as this likely to represent one trade
+        df_currency_pair = df_currency_pair.group_by("trade_time", maintain_order=True).agg(pl.all().last())
+
+        # Add lagged varialbles automaticaly
+        lags = [1, 2, 3, 5, 7]  # Specify the lags 
+        for lag in lags:
+            df_currency_pair = df_currency_pair.with_columns(
+                (pl.col("target").shift(lag)).alias(f"target_lag_{lag}"),
+                (pl.col("price").shift(lag)).alias(f'price_lag_{lag}'),
+            )
+
+        df_currency_pair = df_currency_pair.with_columns(
+            (pl.col("target").shift(-1)).alias("target_one_step_ahead")
+        )
+
         return df_currency_pair.collect()
 
-# As a possible target: "target" - average between last bid and ask 
+# "target" - average between last bid and ask 
+# "spread" - current difference between last bid and ask 
+# "cum_quote" - is the cumulative amount traded within one milisecond
 
 # Perfectly we would like to predict when market orders are pushing eather bid or ask. 
 
-def _test_main():
+def _test_main(download: bool = False, output_dir: Path = None):
     hive_dir: Path = Path(r"C:\Users\310\Desktop\Progects_Py\data\microstructure_price_prediction_data\unzipped")
     start_date: datetime = datetime(2024, 6, 1)
     end_date: datetime = datetime(2024, 7, 31)
 
     pipeline: MicrostructurePipeline = MicrostructurePipeline(hive_dir=hive_dir)
     df_cross_section: pl.DataFrame = pipeline.load_cross_section(start_time=start_date, end_time=end_date)
-    print(df_cross_section)
+    print(df_cross_section, df_cross_section['spread'], df_cross_section.columns)
+
+    # Save cross section
+    if download:
+        
+        if not output_dir:
+            raise ValueError("Output directory must be specified when download is set to True.")
+        
+        output_dir = Path(output_dir)
+
+        output_file = output_dir / "df_cross_section_V0.1_.parquet"
+        df_cross_section.write_parquet(output_file)
+        print(f"DataFrame saved to: {output_file}")
+
 
 
 if __name__ == "__main__":
-    _test_main()
+    _test_main(download=True, output_dir=r'C:\Users\310\Desktop\Progects_Py\data\microstructure_price_prediction_data\cross_section')
