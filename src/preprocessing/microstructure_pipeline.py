@@ -8,6 +8,7 @@ import polars as pl
 
 from core.currency import CurrencyPair
 from core.feature_pipeline import FeaturePipeline
+from feature_utils.time_features import add_sin_cos_features
 
 
 class MicrostructurePipeline(FeaturePipeline):
@@ -46,6 +47,24 @@ class MicrostructurePipeline(FeaturePipeline):
         # From this point I am going to drop all the rows that happen within one milisecond exept the last one as this likely to represent one trade
         df_currency_pair = df_currency_pair.group_by("trade_time", maintain_order=True).agg(pl.all().last())
 
+        # Time features: As we would like to allign time seties structure of our data as well as cross-sectional one 
+        # We are going to group by our observations by trade time and add similat time features to observations that happen at the same momet
+        # Moreover we would like to capture the similarity of trades tha happen noe exactly but close to each other
+
+        # Define time units
+        time_units = {
+            "minute": 60,
+            "hour": 24,
+            "day": 7,
+            "week": 52,
+            "month": 12,
+            "year": 365
+        }
+
+        # Note that plot=True use df.to_pandas() which could significantly increase execution time 
+        df_currency_pair = add_sin_cos_features(df=df_currency_pair, time_col='trade_time', time_units=time_units, plot=False)
+        
+
         # Add lagged varialbles automaticaly
         lags = [1, 2, 3, 5, 7]  # Specify the lags 
         for lag in lags:
@@ -73,7 +92,7 @@ def _test_main(download: bool = False, output_dir: Path = None):
 
     pipeline: MicrostructurePipeline = MicrostructurePipeline(hive_dir=hive_dir)
     df_cross_section: pl.DataFrame = pipeline.load_cross_section(start_time=start_date, end_time=end_date)
-    print(df_cross_section, df_cross_section['spread'], df_cross_section.columns)
+    print(df_cross_section)
 
     # Save cross section
     if download:
@@ -90,4 +109,4 @@ def _test_main(download: bool = False, output_dir: Path = None):
 
 
 if __name__ == "__main__":
-    _test_main(download=True, output_dir=r'C:\Users\310\Desktop\Progects_Py\data\microstructure_price_prediction_data\cross_section')
+    _test_main(download=False, output_dir=r'C:\Users\310\Desktop\Progects_Py\data\microstructure_price_prediction_data\cross_section')
