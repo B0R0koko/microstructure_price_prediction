@@ -77,7 +77,7 @@ class MicrostructurePipeline(FeaturePipeline):
             )
 
         df_currency_pair = df_currency_pair.with_columns(
-            (pl.col("target").shift(-1)).alias("target_one_step_ahead")
+            (pl.col("target").shift(-5)).alias("target_five_step_ahead")
         )
 
         return df_currency_pair.collect()
