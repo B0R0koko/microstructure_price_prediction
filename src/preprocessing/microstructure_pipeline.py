@@ -30,13 +30,15 @@ class MicrostructurePipeline(FeaturePipeline):
         )
         # Compute features using pl.LazyFrame, make sure to call .collect() on pl.LazyFrame at the very end
         # this way it is more efficient
+
+        # FIRST ORDER FEATURES######################################################################
         df_currency_pair = df_currency_pair.with_columns(
             (pl.col("price") * pl.col("quantity")).alias("quote"),
             (pl.when(pl.col("is_buyer_maker") == True).then(pl.col("price")).otherwise(None).fill_null(strategy="forward")).alias("last_ask"),
             (pl.when(pl.col("is_buyer_maker") == False).then(pl.col('price')).otherwise(None).fill_null(strategy='forward')).alias("last_bid"),
         )
 
-        
+        # SECOND ORDER FEATURES ####################################################################
         df_currency_pair = df_currency_pair.with_columns(
             ((pl.col("last_bid") + pl.col("last_ask")) / 2).alias("target"),
             (pl.col('last_bid') - pl.col('last_ask')).alias('spread'),
@@ -47,7 +49,8 @@ class MicrostructurePipeline(FeaturePipeline):
         # From this point I am going to drop all the rows that happen within one milisecond exept the last one as this likely to represent one trade
         df_currency_pair = df_currency_pair.group_by("trade_time", maintain_order=True).agg(pl.all().last())
 
-        # Time features: As we would like to allign time seties structure of our data as well as cross-sectional one 
+        # TIME FEATURES#############################################################################
+        # As we would like to allign time seties structure of our data as well as cross-sectional one 
         # We are going to group by our observations by trade time and add similat time features to observations that happen at the same momet
         # Moreover we would like to capture the similarity of trades tha happen noe exactly but close to each other
 
@@ -65,7 +68,7 @@ class MicrostructurePipeline(FeaturePipeline):
         df_currency_pair = add_sin_cos_features(df=df_currency_pair, time_col='trade_time', time_units=time_units, plot=False)
         
 
-        # Add lagged varialbles automaticaly
+        # LAGGED VARIABLES###########################################################################
         lags = [1, 2, 3, 5, 7]  # Specify the lags 
         for lag in lags:
             df_currency_pair = df_currency_pair.with_columns(
@@ -79,16 +82,19 @@ class MicrostructurePipeline(FeaturePipeline):
 
         return df_currency_pair.collect()
 
+# VARIABLES DISCRIPTION:
 # "target" - average between last bid and ask 
 # "spread" - current difference between last bid and ask 
 # "cum_quote" - is the cumulative amount traded within one milisecond
 
+# NOTES:
+# We are going to use target encoding for currency pair lables. To avoid leakege we will apply it after train test split
 # Perfectly we would like to predict when market orders are pushing eather bid or ask. 
 
 def _test_main(download: bool = False, output_dir: Path = None):
     hive_dir: Path = Path(r"C:\Users\310\Desktop\Progects_Py\data\microstructure_price_prediction_data\unzipped")
-    start_date: datetime = datetime(2024, 6, 1)
-    end_date: datetime = datetime(2024, 7, 31)
+    start_date: datetime = datetime(2024, 6, 15)
+    end_date: datetime = datetime(2024, 7, 15)
 
     pipeline: MicrostructurePipeline = MicrostructurePipeline(hive_dir=hive_dir)
     df_cross_section: pl.DataFrame = pipeline.load_cross_section(start_time=start_date, end_time=end_date)
