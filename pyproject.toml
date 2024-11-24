@@ -20,6 +20,8 @@ linearmodels = "^6.1"
 optuna = "^4.1.0"
 ipywidgets = "^8.1.5"
 plotly = "^5.24.1"
+dash = "^2.18.2"
+optuna-dashboard = "^0.17.0"
 
 
 [build-system]
