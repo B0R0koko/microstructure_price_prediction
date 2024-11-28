@@ -1,6 +1,7 @@
 from calendar import monthrange
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, timedelta, datetime
+from enum import Enum
 from typing import Optional, List
 
 import pandas as pd
@@ -57,5 +58,15 @@ def generate_daily_time_chunks(start_date: date, end_date: date) -> Optional[Lis
 
 @dataclass
 class Bounds:
-    start_date: date
-    end_date: date
+    start_time: datetime
+    end_time: datetime
+
+
+class TimeOffset(Enum):
+    FIVE_SECONDS: timedelta = timedelta(seconds=5)
+    TEN_SECONDS: timedelta = timedelta(seconds=10)
+    HALF_MINUTE: timedelta = timedelta(seconds=30)
+    MINUTE: timedelta = timedelta(minutes=1)
+    FIVE_MINUTE: timedelta = timedelta(minutes=5)
+    FIFTEEN_MINUTE: timedelta = timedelta(minutes=15)
+    HALF_HOUR: timedelta = timedelta(minutes=30)
