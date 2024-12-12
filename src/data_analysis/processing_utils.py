@@ -1,5 +1,7 @@
 import polars as pl
 import numpy as np
+from datetime import datetime
+import matplotlib.pyplot as plt
 
 class DataPrepare():
 
@@ -98,6 +100,30 @@ class DataPrepare():
         y_test = df_test.select(pl.col(target_var)).to_numpy().ravel()
 
         return X_train, y_train, X_test, y_test
+    
+    def visualize(self, start_time: datetime, end_time: datetime, variables_to_plot: list[str],) -> None: 
+        """
+        Visualize selected variabals againts trade time in chosen time range, all variables ploted on the same plot.
+        """
+        symbols: list[str] = self.df.select(pl.col('symbol')).unique()
+
+        df_for_plot: pl.DataFrame = self.df.filter((pl.col('symbol') == symbols[0]) &
+                                              (pl.col('trade_time').is_between(lower_bound=start_time, upper_bound=end_time)))
+
+        # Plot all variables on the same plot
+        plt.figure(figsize=(12, 8))
+
+        for var in variables_to_plot:
+            plt.plot(df_for_plot['trade_time'], df_for_plot[var], label=var)
+
+        plt.xlabel('Trade Time')
+        plt.ylabel('Values')
+        plt.title('Variables over Trade Time')
+        plt.legend()
+        plt.grid()
+        plt.show()
+    
+    
 
 
 ############################## SAME THING BUT IN SEPARATE FUNCTIONS ########################################
@@ -149,3 +175,23 @@ def X_y_split(target_var: str, df_train: pl.DataFrame, df_test: pl.DataFrame) ->
     y_test = df_test.select(pl.col(target_var)).to_numpy().ravel()
 
     return X_train, y_train, X_test, y_test
+
+def visualize(df: pl.DataFrame, start_time: datetime, end_time: datetime, variables_to_plot: list[str],) -> None: 
+
+    symbols: list[str] = df.select(pl.col('symbol')).unique()
+
+    df_for_plot: pl.DataFrame = df.filter((pl.col('symbol') == symbols[0]) &
+                                          (pl.col('trade_time').is_between(lower_bound=start_time, upper_bound=end_time)))
+
+    # Plot all variables on the same plot
+    plt.figure(figsize=(12, 8))
+
+    for var in variables_to_plot:
+        plt.plot(df_for_plot['trade_time'], df_for_plot[var], label=var)
+
+    plt.xlabel('Trade Time')
+    plt.ylabel('Values')
+    plt.title('Variables over Trade Time')
+    plt.legend()
+    plt.grid()
+    plt.show()
