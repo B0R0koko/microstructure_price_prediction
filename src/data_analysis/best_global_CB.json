@@ -1,0 +1,28 @@
+{
+    "study_name": "study_2024-12-13_18-13-23",
+    "best_value": 0.0012119797463324507,
+    "best_params": {
+        "iterations": 608,
+        "learning_rate": 0.01658942017586916,
+        "depth": 6,
+        "l2_leaf_reg": 9.258378471824786,
+        "bagging_temperature": 7.149362645280474,
+        "colsample_bylevel": 0.7157208233471366,
+        "subsample": 0.9124460163174177,
+        "grow_policy": "SymmetricTree",
+        "min_data_in_leaf": 100
+    },
+    "features": [
+        "currency_pair",
+        "log_interval_return",
+        "num_aggregated_trades",
+        "volume_imbalance_FIVE_SECONDS",
+        "volume_imbalance_TEN_SECONDS",
+        "volume_imbalance_HALF_MINUTE",
+        "volume_imbalance_MINUTE",
+        "slippage_imbalance_FIVE_SECONDS",
+        "slippage_imbalance_TEN_SECONDS",
+        "slippage_imbalance_HALF_MINUTE",
+        "slippage_imbalance_MINUTE"
+    ]
+}

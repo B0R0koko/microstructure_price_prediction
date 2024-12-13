@@ -75,7 +75,7 @@ class DataPrepare():
         return df_train.select(pl.exclude("currency_pair")), df_test.select(pl.exclude("currency_pair"))
     
     
-    def X_y_split(self, target_var: str, target_encode: bool=False,) -> tuple[pl.DataFrame, np.ndarray, pl.DataFrame, np.ndarray]:
+    def X_y_split(self, target_var: str, target_encode: bool=False, to_pandas: bool=False) -> tuple[pl.DataFrame, np.ndarray, pl.DataFrame, np.ndarray]:
         """
         Splits the dataset into features (X) and target (y) for training and testing.
         """
@@ -98,6 +98,8 @@ class DataPrepare():
         df_test = df_test.drop_nulls()
         X_test = df_test.select(pl.exclude(target_var))
         y_test = df_test.select(pl.col(target_var)).to_numpy().ravel()
+        if to_pandas == True:
+            return X_train.to_pandas(), y_train, X_test.to_pandas(), y_test
 
         return X_train, y_train, X_test, y_test
     
