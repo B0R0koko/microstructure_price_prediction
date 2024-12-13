@@ -30,9 +30,9 @@ class DataPrepare():
         if not cols_to_exclude is None:
             df = df.select(pl.exclude(cols_to_exclude))
 
-        for currency_pair in df["symbol"].unique():
+        for currency_pair in df["currency_pair"].unique():
 
-            curr_df = df.filter(pl.col('symbol') == currency_pair)
+            curr_df = df.filter(pl.col('currency_pair') == currency_pair)
             split_indx = int(len(curr_df) * train_test_ratio)
 
             train = curr_df[:split_indx]
@@ -63,16 +63,16 @@ class DataPrepare():
         
         symbol_means = (
             self.df_train
-            .group_by("symbol")
-            .agg(pl.col(target_var).mean().alias("symbol_mean"))
+            .group_by("currency_pair")
+            .agg(pl.col(target_var).mean().alias("currency_pair_mean"))
         )
 
-        df_train = self.df_train.join(symbol_means, on="symbol", how="left")
+        df_train = self.df_train.join(symbol_means, on="currency_pair", how="left")
 
         # Step 3: Apply the same encoding to the test dataset to avoid leakeg
-        df_test = self.df_test.join(symbol_means, on="symbol", how="left")
+        df_test = self.df_test.join(symbol_means, on="currency_pair", how="left")
 
-        return df_train.select(pl.exclude("symbol")), df_test.select(pl.exclude("symbol"))
+        return df_train.select(pl.exclude("currency_pair")), df_test.select(pl.exclude("currency_pair"))
     
     
     def X_y_split(self, target_var: str, target_encode: bool=False,) -> tuple[pl.DataFrame, np.ndarray, pl.DataFrame, np.ndarray]:
@@ -134,9 +134,9 @@ def train_test_split(df: pl.DataFrame, train_test_ratio = 0.5, print_stat=True) 
     df_train = pl.DataFrame()
     df_test = pl.DataFrame()
 
-    for currency_pair in df["symbol"].unique():
+    for currency_pair in df["currency_pair"].unique():
 
-        curr_df = df.filter(pl.col('symbol') == currency_pair)
+        curr_df = df.filter(pl.col('currency_pair') == currency_pair)
         split_indx = int(len(curr_df) * train_test_ratio)
 
         train = curr_df[:split_indx]
@@ -154,16 +154,16 @@ def train_test_split(df: pl.DataFrame, train_test_ratio = 0.5, print_stat=True) 
 def target_encoding(target_var: str, df_train: pl.DataFrame, df_test: pl.DataFrame) -> pl.DataFrame:
     symbol_means = (
         df_train
-        .group_by("symbol")
-        .agg(pl.col(target_var).mean().alias("symbol_mean"))
+        .group_by("currency_pair")
+        .agg(pl.col(target_var).mean().alias("currency_pair_mean"))
     )
 
-    df_train = df_train.join(symbol_means, on="symbol", how="left")
+    df_train = df_train.join(symbol_means, on="currency_pair", how="left")
 
     # Step 3: Apply the same encoding to the test dataset to avoid leakeg
-    df_test = df_test.join(symbol_means, on="symbol", how="left")
+    df_test = df_test.join(symbol_means, on="currency_pair", how="left")
 
-    return df_train.select(pl.exclude("symbol")), df_test.select(pl.exclude("symbol"))
+    return df_train.select(pl.exclude("currency_pair")), df_test.select(pl.exclude("currency_pair"))
 
 def X_y_split(target_var: str, df_train: pl.DataFrame, df_test: pl.DataFrame) -> pl.DataFrame:
     df_train = df_train.drop_nulls()
@@ -178,9 +178,9 @@ def X_y_split(target_var: str, df_train: pl.DataFrame, df_test: pl.DataFrame) ->
 
 def visualize(df: pl.DataFrame, start_time: datetime, end_time: datetime, variables_to_plot: list[str],) -> None: 
 
-    symbols: list[str] = df.select(pl.col('symbol')).unique()
+    symbols: list[str] = df.select(pl.col('currency_pair')).unique()
 
-    df_for_plot: pl.DataFrame = df.filter((pl.col('symbol') == symbols[0]) &
+    df_for_plot: pl.DataFrame = df.filter((pl.col('currency_pair') == symbols[0]) &
                                           (pl.col('trade_time').is_between(lower_bound=start_time, upper_bound=end_time)))
 
     # Plot all variables on the same plot
