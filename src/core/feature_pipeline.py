@@ -89,7 +89,7 @@ class FeaturePipeline(ABC):
                 currency_pair=currency_pair, bounds=bounds
             )
             currency_pair_features["log_return"] = self.attach_currency_pair_return(
-                currency_pair=currency_pair, bounds=bounds, time_offset=TimeOffset.TEN_SECONDS
+                currency_pair=currency_pair, bounds=bounds, time_offset=TimeOffset.FIVE_SECONDS
             )
             cross_section_features.append(currency_pair_features)
 
