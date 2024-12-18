@@ -1,14 +1,15 @@
 {
-    "study_name": "study_2024-12-13_13-13-06",
-    "best_value": 1.4801020439711524e-06,
+    "study_name": "study_2024-12-18_20-00-17",
+    "best_value": 2.7135452067186193e-08,
     "best_params": {
-        "n_estimators": 174,
-        "max_depth": 20,
-        "min_samples_split": 18,
-        "min_weight_fraction_leaf": 0.10426666030312004,
-        "min_impurity_decrease": 0.232324964071296
+        "n_estimators": 88,
+        "max_depth": 26,
+        "min_samples_split": 7,
+        "min_weight_fraction_leaf": 0.34124735587523675,
+        "min_impurity_decrease": 0.20975381031276524
     },
     "features": [
+        "cross_section_id",
         "log_interval_return",
         "num_aggregated_trades",
         "volume_imbalance_FIVE_SECONDS",
