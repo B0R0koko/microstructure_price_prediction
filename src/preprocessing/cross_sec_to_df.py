@@ -29,8 +29,8 @@ def main():
     hive_dir: Path = Path(r"C:\Users\310\Desktop\Progects_Py\data\microstructure_price_prediction_data\unzipped")
     save_dir: Path = Path(r"C:\Users\310\Desktop\Progects_Py\data\microstructure_price_prediction_data\dfs")
     save: bool = True
-    start_of_period: datetime = datetime(2024, 6, 15,)
-    end_of_period: datetime = datetime(2024, 7, 15,)
+    start_of_period: datetime = datetime(2024, 6, 29, 20)
+    end_of_period: datetime = datetime(2024, 7, 1,)
     delta: timedelta = timedelta(seconds=10 )
 
 
