@@ -88,6 +88,10 @@ class FeaturePipeline(ABC):
             currency_pair_features: Dict[str, Any] = self.compute_features_for_currency_pair(
                 currency_pair=currency_pair, bounds=bounds
             )
+            # Check if there is no trade => no features for currency pair and skip it if yes
+            if currency_pair_features is None:
+                continue
+            
             currency_pair_features["log_return"] = self.attach_currency_pair_return(
                 currency_pair=currency_pair, bounds=bounds, time_offset=TimeOffset.FIVE_SECONDS
             )

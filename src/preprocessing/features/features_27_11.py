@@ -37,6 +37,7 @@ def aggregate_ticks_into_trades(df_currency_pair: pl.LazyFrame) -> pl.LazyFrame:
             quantity_sign=pl.col("quantity_sign").sum(),
         )
     )
+        
     return df_trades
 
 
@@ -90,7 +91,7 @@ def compute_features(df_currency_pair: pl.LazyFrame, currency_pair: CurrencyPair
     # Aggregate ticks executed at the same ns timestamp into trades
     df_trades = aggregate_ticks_into_trades(df_currency_pair=df_currency_pair)
     df_trades = compute_slippage(df_trades=df_trades)
-
+    
     # Now after all preprocessing compute features for CurrencyPair
     # number of aggregated trades within the time interval of df_currency_pair
     num_aggregated_trades: int = df_trades.select(pl.len()).collect().item()

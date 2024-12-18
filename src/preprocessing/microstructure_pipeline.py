@@ -24,6 +24,13 @@ class MicrostructurePipeline(FeaturePipeline):
         which returns a mapping of feature names to their corresponding values
         """
         df_currency_pair: pl.LazyFrame = self.load_currency_pair_dataframe(currency_pair=currency_pair, bounds=bounds)
+
+        # Check if during specified time window there are no trades withing currency pair
+        no_trades = df_currency_pair.collect().is_empty()
+        if no_trades:
+            print(" No trades")
+            return None
+        
         # Compute features using pl.LazyFrame, make sure to call .collect() on pl.LazyFrame at the very end
         # this way it is more efficient
         features: Dict[str, Any] = compute_features(

@@ -12,9 +12,9 @@ def main():
     hive_dir: Path = Path(r"C:\Users\310\Desktop\Progects_Py\data\microstructure_price_prediction_data\unzipped")
     save_dir: Path = Path(r"C:\Users\310\Desktop\Progects_Py\data\microstructure_price_prediction_data\dfs")
     save = True
-    start_of_period: datetime = datetime(2024, 6, 1, 1, 0)
-    end_of_period: datetime = datetime(2024, 6, 1, 1, 1)
-    delta: timedelta = timedelta(seconds=20)
+    start_of_period: datetime = datetime(2024, 6, 15,)
+    end_of_period: datetime = datetime(2024, 7, 15,)
+    delta: timedelta = timedelta(seconds=10 )
 
 
     bounds: Bounds = Bounds(start_inclusive=start_of_period, end_exclusive=start_of_period + delta)
@@ -24,6 +24,12 @@ def main():
         # Load data, compute features and get cross-setion
         pipeline: MicrostructurePipeline = MicrostructurePipeline(hive_dir=hive_dir)
         df_cross_section: pl.DataFrame = pipeline.load_cross_section(bounds=bounds)
+
+        # Check if there were no trades at all during spesified time window
+        if df_cross_section.is_empty():
+            bounds.start_inclusive += delta
+            bounds.end_exclusive += delta
+            continue
 
         # Define cross-section ID with the end of cross-siction period
         cross_section_id = bounds.end_exclusive
@@ -37,7 +43,7 @@ def main():
 
         staked_df = staked_df.vstack(df_cross_section) if not staked_df.is_empty() else df_cross_section
 
-        print(staked_df)
+    print(staked_df)
 
     if save:
         #Spesify file name 
