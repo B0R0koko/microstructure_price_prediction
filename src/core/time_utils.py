@@ -1,6 +1,7 @@
 from calendar import monthrange
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, timedelta, datetime, time
+from enum import Enum
 from typing import Optional, List
 
 import pandas as pd
@@ -55,7 +56,46 @@ def generate_daily_time_chunks(start_date: date, end_date: date) -> Optional[Lis
     return days
 
 
+def start_of_the_day(day: date) -> datetime:
+    """Converts date to datetime with 0:00 time"""
+    return datetime.combine(date=day, time=time(hour=0, minute=0, second=0))
+
+
+def end_of_the_day(day: date) -> datetime:
+    """Converts date to datetime with 23:59:59:9999 time"""
+    return start_of_the_day(day=day) + timedelta(days=1) - timedelta(microseconds=1)
+
+
 @dataclass
 class Bounds:
-    start_date: date
-    end_date: date
+    start_inclusive: datetime
+    end_exclusive: datetime
+
+    @classmethod
+    def for_days(cls, start_date: date, end_date: date):
+        return cls(
+            start_inclusive=start_of_the_day(day=start_date),
+            end_exclusive=end_of_the_day(day=end_date),
+        )
+
+    def __str__(self) -> str:
+        return f"Bounds: {self.start_inclusive} - {self.end_exclusive}"
+
+
+class TimeOffset(Enum):
+    FIVE_SECONDS: timedelta = timedelta(seconds=5)
+    TEN_SECONDS: timedelta = timedelta(seconds=10)
+    HALF_MINUTE: timedelta = timedelta(seconds=30)
+    MINUTE: timedelta = timedelta(minutes=1)
+    FIVE_MINUTE: timedelta = timedelta(minutes=5)
+    FIFTEEN_MINUTE: timedelta = timedelta(minutes=15)
+    HALF_HOUR: timedelta = timedelta(minutes=30)
+
+
+if __name__ == "__main__":
+    bounds: Bounds = Bounds(
+        start_inclusive=start_of_the_day(date.today()),
+        end_exclusive=end_of_the_day(date.today()),
+    )
+
+    print(bounds)

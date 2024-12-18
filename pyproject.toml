@@ -15,6 +15,10 @@ requests = "^2.32.3"
 notebook = "^7.2.2"
 ipykernel = "^6.29.5"
 pytest = "^8.3.3"
+pyarrow = "^18.0.0"
+fastparquet = "^2024.5.0"
+polario = "^0.3.1"
+tqdm = "^4.67.0"
 
 
 [build-system]

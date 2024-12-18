@@ -1,6 +1,7 @@
 # pylint: disable=use-dict-literal
 
 import re
+from datetime import datetime
 from pathlib import Path
 from typing import List, Dict, Optional, Any
 from urllib.parse import urlencode
@@ -10,8 +11,9 @@ from scrapy.crawler import CrawlerProcess
 from scrapy.http import Request
 from scrapy.http.response import Response
 
-from data_collection.core.collect_mode import CollectMode
-from data_collection.core.currency import CurrencyPair
+from core.collect_mode import CollectMode
+from core.currency import CurrencyPair
+from core.time_utils import Bounds, start_of_the_day
 from data_collection.datavision.settings import SETTINGS
 
 BINANCE_S3: str = "https://s3-ap-northeast-1.amazonaws.com/data.binance.vision"
@@ -27,7 +29,7 @@ def get_currency_url(
     params: Dict[str, str] = {
         "delimiter": "/",
         # data/spot/daily/trades/1INCHBUSD/
-        "prefix": f"data/spot/{collect_mode.lower()}/trades/{currency_pair.name}/",
+        "prefix": f"data/spot/{collect_mode.lower()}/trades/{currency_pair.binance_name}/",
     }
 
     if marker:
@@ -43,14 +45,34 @@ def get_zip_file_url(href: str) -> str:
     return f"{BINANCE_DATAVISION}/{href}"
 
 
+def filter_hrefs_by_bounds(hrefs: List[str], bounds: Bounds) -> List[str]:
+    """Takes bounds as input and returns a list of hrefs that matches passed in Bounds"""
+    filtered_hrefs: List[str] = []
+    for href in hrefs:
+        # Find date in href string and parse it to datetime
+        href_date_string: str = re.search(pattern=r"(\d{4}-\d{2})", string=href)[1]
+        href_date: datetime = start_of_the_day(
+            day=datetime.strptime(href_date_string, '%Y-%m').date()
+        )
+        if bounds.start_inclusive <= href_date <= bounds.end_exclusive:
+            filtered_hrefs.append(href)
+    return filtered_hrefs
+
+
 class TradesCrawler(scrapy.Spider):
     name = "ticker_crawler"
 
     def __init__(
-            self, currency_pairs: List[CurrencyPair], collect_mode: CollectMode, output_dir: Path, *args, **kwargs
+            self,
+            currency_pairs: List[CurrencyPair],
+            bounds: Bounds,
+            collect_mode: CollectMode,
+            output_dir: Path,
+            *args, **kwargs
     ):
         super().__init__(*args, **kwargs)
         self.currency_pairs: List[CurrencyPair] = currency_pairs
+        self.bounds: Bounds = bounds
         self.collect_mode: CollectMode = collect_mode
         self.output_dir: Path = output_dir
 
@@ -86,7 +108,10 @@ class TradesCrawler(scrapy.Spider):
         # Once we have collected all hrefs into response.meta.href_container we loop over it and send requests that
         # collect zip files
 
-        for href in href_container:
+        # Filter hrefs by dates that we want to collect data for
+        filtered_hrefs: List[str] = filter_hrefs_by_bounds(hrefs=href_container, bounds=self.bounds)
+
+        for href in filtered_hrefs:
             yield scrapy.Request(
                 url=get_zip_file_url(href=href),
                 callback=self.parse_response_from_zip_endpoint,
