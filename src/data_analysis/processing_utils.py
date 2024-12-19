@@ -1,7 +1,9 @@
 import polars as pl
+import pandas as pd
 import numpy as np
 from datetime import datetime
 import matplotlib.pyplot as plt
+from scipy.signal import savgol_filter
 
 class DataPrepare():
 
@@ -140,26 +142,53 @@ class DataPrepare():
         y_test = df_test.select(pl.col(target_var)).to_numpy().ravel()
         
         if to_pandas == True:
-            return X_train.to_pandas(), y_train, X_test.to_pandas(), y_test
+            return X_train.to_pandas(), pd.Series(y_train), X_test.to_pandas(), pd.Series(y_test)
 
         return X_train, y_train, X_test, y_test
     
-    def visualize(self, start_time: datetime, end_time: datetime, variables_to_plot: list[str],) -> None: 
+    def visualize(
+        self,
+        start_time: datetime,
+        end_time: datetime,
+        variables_to_plot: list[str],
+        smoothing: bool = True,
+        window_length: int = 70,
+        poly_order: int = 3,
+    ) -> None:
         """
-        Visualize selected variabals againts trade time in chosen time range, all variables ploted on the same plot.
+        Visualize selected variables against trade time in a chosen time range.
+        All variables are plotted on the same plot, with optional smoothing.
+    
+        Parameters:
+            start_time (datetime): Start of the time range.
+            end_time (datetime): End of the time range.
+            variables_to_plot (list[str]): List of variables to plot.
+            smoothing (bool): Apply smoothing to the plots. Default is True.
+            window_length (int): Window length for the smoothing filter (must be odd).
+            poly_order (int): Polynomial order for smoothing (default is 3).
         """
+        # Get unique symbols from the dataset
         symbols: list[str] = self.df.select(pl.col('currency_pair')).unique()
-
-        df_for_plot: pl.DataFrame = self.df.filter((pl.col('currency_pair') == symbols[0]) &
-                                              (pl.col('cross_section_id').is_between(lower_bound=start_time, upper_bound=end_time)))
-
-        # Plot all variables on the same plot
+    
+        # Filter the dataframe for the desired time range and currency pair
+        df_for_plot: pl.DataFrame = self.df.filter(
+            (pl.col('currency_pair') == symbols[0])
+            & (pl.col('cross_section_id').is_between(lower_bound=start_time, upper_bound=end_time))
+        )
+    
+        # Plot all variables
         plt.figure(figsize=(12, 8))
-
         for var in variables_to_plot:
-            plt.plot(df_for_plot['cross_section_id'], df_for_plot[var], label=var)
-
-        plt.xlabel('Cross-section id')
+            y_data = df_for_plot[var].to_numpy()
+            x_data = df_for_plot['cross_section_id'].to_numpy()
+    
+            # Apply smoothing if enabled
+            if smoothing and len(y_data) >= window_length:
+                y_data = savgol_filter(y_data, window_length=window_length, polyorder=poly_order)
+    
+            plt.plot(x_data, y_data, label=var)
+    
+        plt.xlabel('Cross-section ID')
         plt.ylabel('Values')
         plt.title('Variables over Trade Time')
         plt.legend()
