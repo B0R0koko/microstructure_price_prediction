@@ -180,13 +180,13 @@ class DataPrepare():
         plt.figure(figsize=(12, 8))
         for var in variables_to_plot:
             y_data = df_for_plot[var].to_numpy()
-            x_data = df_for_plot['cross_section_id'].to_numpy()
-    
+            #x_data = df_for_plot['cross_section_id'].to_numpy()
+            
             # Apply smoothing if enabled
             if smoothing and len(y_data) >= window_length:
                 y_data = savgol_filter(y_data, window_length=window_length, polyorder=poly_order)
-    
-            plt.plot(x_data, y_data, label=var)
+                
+            plt.plot(y_data, label=var)
     
         plt.xlabel('Cross-section ID')
         plt.ylabel('Values')
@@ -253,13 +253,13 @@ def visualize(df: pl.DataFrame, start_time: datetime, end_time: datetime, variab
     symbols: list[str] = df.select(pl.col('currency_pair')).unique()
 
     df_for_plot: pl.DataFrame = df.filter((pl.col('currency_pair') == symbols[0]) &
-                                          (pl.col('trade_time').is_between(lower_bound=start_time, upper_bound=end_time)))
+                                          (pl.col('trade_time').is_between(lower_bound=end_time, upper_bound=start_time)))
 
     # Plot all variables on the same plot
     plt.figure(figsize=(12, 8))
 
     for var in variables_to_plot:
-        plt.plot(df_for_plot['trade_time'], df_for_plot[var], label=var)
+        plt.plot(df_for_plot[var], label=var)
 
     plt.xlabel('Trade Time')
     plt.ylabel('Values')

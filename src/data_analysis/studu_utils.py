@@ -230,3 +230,6 @@ def plot_predictions(y_test, y_pred):
     plt.legend()
     plt.grid(True)
     plt.show()
+
+    fig = plt.gcf()  
+    return fig

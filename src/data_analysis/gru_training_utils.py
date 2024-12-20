@@ -1,11 +1,12 @@
 import polars as pl
 import pandas as pd
-from datetime import datetime
 import numpy as np
 import matplotlib.pyplot as plt
 import torch
 import torch.nn as nn
 from torch.utils.data import Dataset, DataLoader
+from datetime import datetime, timedelta
+
 
 ############################################################
 # Data Preparation and Dataset Class
@@ -82,6 +83,14 @@ class TimeSeriesDataset(Dataset):
         for pdf in pivoted_features[1:]:
             wide_df = wide_df.join(pdf, on="cross_section_id", how="inner")
         
+        shifted_columns = [
+            pl.col(col).shift(1).alias(col)  # Shift the column and alias it to retain the same name
+            for col in wide_df.columns if col.startswith(f"{target_var}_")
+        ]
+
+        # Reassign shifted values
+        wide_df = wide_df.with_columns(shifted_columns)
+        
         wide_df = wide_df.fill_null(0)
         wide_df = wide_df.fill_nan(0)
         # wide_df now has columns: cross_section_id, and for each feature and currency pair combination: a column.
@@ -134,7 +143,7 @@ class TimeSeriesDataset(Dataset):
         # Input indices: [idx: idx+seq_length]
         # Target index: idx+seq_length (one step ahead)
         input_slice = slice(idx, idx + self.seq_length)
-        target_idx = idx + self.seq_length
+        target_idx = idx + self.seq_length 
 
         # Extract input sequence (time, features, currency_pairs)
         # self.data_array shape: (time, features, currency_pairs)
@@ -161,3 +170,38 @@ def mape(preds, targets, eps=1e-6):
     # MAPE = mean(|(y - y_pred)| / |y|)
     # Adding eps to avoid division by zero if target is zero.
     return (torch.mean(torch.abs((targets - preds) / (targets + eps))) * 100).item()
+
+
+############################################################
+# Sample data, to test TimeSeriesDataset
+############################################################
+
+num_rows = 20
+
+# currency_pair alternates: currency1, currency2
+currency_pairs = ["currency1" if i % 2 == 0 else "currency2" for i in range(num_rows)]
+
+# cross_section_id in pairs:
+# Start from a base datetime
+base_dt = datetime(2024, 1, 1, 0, 0, 0)
+# Every two rows, increment by one second (or any time unit)
+# Pair group index: i // 2
+cross_section_ids = [base_dt + timedelta(seconds=(i//2)) for i in range(num_rows)]
+
+# log_return: (1,1), (2,2), ... (10,10)
+log_returns = [(i//2) + 1 for i in range(num_rows)]
+
+# feature1 and feature2: random floats
+feature1 = np.random.randn(num_rows)
+feature2 = np.random.randn(num_rows)
+
+# Create the DataFrame
+df = pl.DataFrame({
+    "currency_pair": currency_pairs,
+    "cross_section_id": cross_section_ids,
+    "feature1": feature1,
+    "feature2": feature2,
+    "log_return": log_returns
+})
+
+#print(df)
