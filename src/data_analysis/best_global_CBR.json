@@ -1,19 +1,20 @@
 {
-    "study_name": "study_2024-12-13_18-13-23",
-    "best_value": 0.00016463493101100582,
+    "study_name": "study_2024-12-20_13-11-34",
+    "best_value": 0.9481248261652133,
     "best_params": {
-        "iterations": 817,
-        "learning_rate": 0.016591010495356,
-        "depth": 3,
-        "l2_leaf_reg": 2.904126336034694,
-        "bagging_temperature": 6.0431349624310515,
-        "colsample_bylevel": 0.9050787803588438,
-        "subsample": 0.8837352281213218,
+        "iterations": 1853,
+        "learning_rate": 0.011745752065255648,
+        "depth": 5,
+        "l2_leaf_reg": 1.1028482274926983,
+        "bagging_temperature": 5.027077328850473,
+        "colsample_bylevel": 0.85202314422938,
         "grow_policy": "SymmetricTree",
-        "min_data_in_leaf": 96
+        "min_data_in_leaf": 18,
+        "loss_function": "YetiRankPairwise"
     },
     "features": [
         "currency_pair",
+        "cross_section_id",
         "log_interval_return",
         "num_aggregated_trades",
         "volume_imbalance_FIVE_SECONDS",

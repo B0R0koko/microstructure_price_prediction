@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import polars as pl
 import pandas as pd
+from catboost import Pool
 from scipy.signal import savgol_filter
 
 
@@ -18,6 +19,24 @@ def load_best_global(BEST_GLOBAL_FILE: str) -> str:
 def save_best_global(best_global: str, BEST_GLOBAL_FILE: str) -> None:
     with open(BEST_GLOBAL_FILE, "w") as f:
         json.dump(best_global, f, indent=4)
+
+def prepare_data_for_ranker(X_train: pd.DataFrame, 
+                            y_train: pd.Series, 
+                            group_id: str,
+                            cat_features: list[str]) -> Pool:
+
+    sorted_train_data = X_train.sort_values(by=group_id)
+    sorted_labels = y_train.loc[sorted_train_data.index]
+    sorted_group_id = sorted_train_data[group_id].astype('category').cat.codes
+    sorted_train_data = sorted_train_data.drop(columns=[group_id])
+
+    train_pool = Pool(
+        data=sorted_train_data,
+        label=sorted_labels,
+        group_id=sorted_group_id,
+        cat_features=cat_features
+    )
+    return train_pool
 
 # Function to plot feature importance
 def plot_feature_importance(model, feature_names: list[str]) -> None:
@@ -98,6 +117,99 @@ def plot_feature_premutation_importance(results):
         plt.gca().invert_yaxis()
         plt.tight_layout()
         plt.show()
+
+def permutation_feature_importance_ranker(
+    ranker_model, X_test, y_test, group_id, cat_features: list[str], metric="NDCG:type=Base"
+):
+    """
+    Evaluates feature importance for a CatBoostRanker by shuffling one feature at a time
+    and measuring the impact on ranking performance (e.g., NDCG).
+
+    Parameters:
+    - ranker_model: Trained CatBoostRanker model.
+    - X_test (pd.DataFrame): Test feature matrix.
+    - y_test (pd.Series): Test labels (returns).
+    - group_id (str): Column name representing group structure in the dataset.
+    - cat_features (list[str]): List of categorical feature names.
+    - metric (str): Ranking metric to evaluate feature importance. Default is "NDCG:type=Base".
+
+    Returns:
+    - results (pd.DataFrame): DataFrame containing features and their corresponding performance scores.
+    """
+    import pandas as pd
+    import numpy as np
+    from catboost import Pool
+    results = {}
+
+    # Sort data by group_id to ensure alignment
+    sorted_train_data = X_test.sort_values(by=group_id)
+    sorted_labels = y_test.loc[sorted_train_data.index]
+    sorted_group_id = sorted_train_data[group_id].astype('category').cat.codes
+    sorted_train_data = sorted_train_data.drop(columns=[group_id])
+
+    # Create test pool
+    test_pool = Pool(
+        data=sorted_train_data,
+        label=sorted_labels,
+        group_id=sorted_group_id,
+        cat_features=cat_features
+    )
+
+    # Store baseline metric
+    baseline_metrics = ranker_model.eval_metrics(
+        data=test_pool,
+        metrics=[metric],
+        ntree_start=0,
+        ntree_end=ranker_model.tree_count_,
+        eval_period=1
+    )
+    baseline_score = np.max(baseline_metrics[metric])  # Best NDCG score
+
+    # Identify features to shuffle
+    features_for_shuffle = [x for x in X_test.columns if x not in cat_features and x != group_id]
+
+    feature_importances = []
+
+    # Iterate over each feature
+    for feature_name in features_for_shuffle:
+        X_test_shuffled = sorted_train_data.copy()
+
+        # Shuffle the feature
+        X_test_shuffled[feature_name] = np.random.permutation(X_test_shuffled[feature_name])
+
+        # Create a new test pool with the shuffled feature
+        shuffled_test_pool = Pool(
+            data=X_test_shuffled,
+            label=sorted_labels,
+            group_id=sorted_group_id,
+            cat_features=cat_features
+        )
+
+        # Evaluate metrics after shuffling
+        shuffled_metrics = ranker_model.eval_metrics(
+            data=shuffled_test_pool,
+            metrics=[metric],
+            ntree_start=0,
+            ntree_end=ranker_model.tree_count_,
+            eval_period=1
+        )
+        shuffled_score = np.max(shuffled_metrics[metric])  # Best NDCG score after shuffling
+
+        # Calculate performance difference
+        score_difference = baseline_score - shuffled_score
+
+        feature_importances.append({
+            "feature": feature_name,
+            "baseline_score": baseline_score,
+            "shuffled_score": shuffled_score,
+            "score_difference": score_difference
+        })
+
+    # Convert results to DataFrame
+    results[metric] = pl.DataFrame(feature_importances)
+
+    return results
+
         
 def plot_predictions(y_test, y_pred):
     # Apply smoothing (Savitzky-Golay filter)
