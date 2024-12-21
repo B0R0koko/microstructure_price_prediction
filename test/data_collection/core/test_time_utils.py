@@ -1,7 +1,7 @@
 from datetime import date
 from typing import List
 
-from data_collection.core.time_utils import generate_month_time_chunks, generate_daily_time_chunks
+from core.time_utils import generate_month_time_chunks, generate_daily_time_chunks
 
 expected_result_monthly: List[date] = [
     date(2023, 2, 1),
