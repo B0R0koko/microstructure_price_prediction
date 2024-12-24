@@ -32,7 +32,7 @@ class MicrostructurePipeline(FeaturePipeline):
 def _test_main():
     hive_dir: Path = Path("D:/data/transformed_data")
     start_time: datetime = datetime(2024, 11, 1, 0, 0, 0)
-    end_time: datetime = datetime(2024, 11, 6, 0, 0, 0)
+    end_time: datetime = datetime(2024, 11, 3, 0, 0, 0)
     step: timedelta = timedelta(minutes=15)
     interval: timedelta = timedelta(minutes=15)
 
@@ -41,7 +41,7 @@ def _test_main():
 
     pipeline: MicrostructurePipeline = MicrostructurePipeline(hive_dir=hive_dir)
     df_features: pl.DataFrame = pipeline.load_multiple_cross_sections(cross_section_bounds=cross_section_bounds)
-    df_features.to_pandas().to_csv("D:/data/final/features_final.csv", index=False)
+    df_features.to_pandas().to_csv("D:/data/final/features_final_1.csv", index=False)
 
 
 if __name__ == "__main__":
